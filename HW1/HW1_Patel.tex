@@ -1,0 +1,249 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlist[enumerate]{label=(\alph*), leftmargin=*, itemsep=8pt}
+
+\lstset{
+  language=R,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{gray},
+  frame=single,
+  rulecolor=\color{gray!60},
+  backgroundcolor=\color{gray!6},
+  xleftmargin=4pt, xrightmargin=4pt,
+  aboveskip=6pt, belowskip=4pt,
+  showstringspaces=false,
+  columns=fullflexible,
+  keepspaces=true
+}
+
+\title{STT 465 -- Homework 1: Probability Review}
+\author{Mihir Patel}
+\date{September 25, 2026}
+
+\begin{document}
+\maketitle
+
+%==================================================================
+\section*{Question 1: Conditional Probability and a Partition}
+
+\[
+H = \{\text{home game}\}, \qquad W = \{\text{team wins}\},
+\]
+\[
+P(H) = 0.60, \qquad P(W \mid H) = 0.70, \qquad P(W \mid H^c) = 0.45.
+\]
+
+\begin{enumerate}
+\item By the definition of conditional probability, $P(W \mid H) = \dfrac{P(W \cap H)}{P(H)}$, so
+\[
+P(W \cap H) = P(W \mid H)\,P(H).
+\]
+
+\item
+\[
+\begin{aligned}
+P(W \cap H)   &= P(W \mid H)\,P(H) = (0.70)(0.60) = 0.42, \\
+P(W \cap H^c) &= P(W \mid H^c)\,P(H^c) = (0.45)(1 - 0.60) = 0.18.
+\end{aligned}
+\]
+
+\item Since $\{H, H^c\}$ partitions the sample space, by the law of total probability
+\[
+P(W) = P(W \mid H)\,P(H) + P(W \mid H^c)\,P(H^c) = 0.42 + 0.18 = 0.60.
+\]
+
+\item By Bayes' theorem,
+\[
+P(H \mid W) = \frac{P(W \mid H)\,P(H)}{P(W)} = \frac{(0.70)(0.60)}{0.60} = \frac{0.42}{0.60} = 0.70.
+\]
+
+\item Both conditional probabilities share the same numerator, $P(W \cap H)$, but they divide by different quantities:
+\[
+P(H \mid W) = \frac{P(W \cap H)}{P(W)}, \qquad P(W \mid H) = \frac{P(W \cap H)}{P(H)}.
+\]
+They are equal only when $P(W) = P(H)$. That happens to be true here ($P(W) = P(H) = 0.60$), which is why part (d) gives $0.70$, but in general $P(W) \neq P(H)$, so $P(H \mid W) \neq P(W \mid H)$.
+\end{enumerate}
+
+%==================================================================
+\section*{Question 2: Independence and Dependence}
+
+\[
+P(A) = 0.40, \qquad P(B) = 0.50, \qquad P(A \cap B) = 0.20.
+\]
+
+\begin{enumerate}
+\item $\displaystyle P(A \mid B) = \frac{P(A \cap B)}{P(B)} = \frac{0.20}{0.50} = 0.40.$
+
+\item $\displaystyle P(B \mid A) = \frac{P(A \cap B)}{P(A)} = \frac{0.20}{0.40} = 0.50.$
+
+\item $A$ and $B$ are independent. Two justifications:
+  \begin{itemize}[itemsep=2pt]
+  \item \textbf{Conditional probabilities:} $P(A \mid B) = 0.40 = P(A)$ and $P(B \mid A) = 0.50 = P(B)$. Knowing one event occurred does not change the probability of the other.
+  \item \textbf{Product rule:} $P(A)\,P(B) = (0.40)(0.50) = 0.20 = P(A \cap B)$.
+  \end{itemize}
+
+\item With $P(A \cap B) = 0.15$,
+\[
+P(A \mid B) = \frac{0.15}{0.50} = 0.30.
+\]
+Since $P(A \mid B) = 0.30 \neq 0.40 = P(A)$ (equivalently, $P(A \cap B) = 0.15 \neq 0.20 = P(A)P(B)$), $A$ and $B$ are \textbf{not} independent: knowing $B$ occurred lowers the probability of $A$.
+
+\item Independence is not about $P(A \cap B)$ being small; it requires $P(A \cap B)$ to equal \emph{exactly} $P(A)\,P(B)$. A small intersection can still mean dependence. In part (d), $P(A \cap B) = 0.15$ is smaller than in the original setup, yet the events are dependent because $0.15 \neq 0.20$. At the extreme, disjoint events with positive probabilities have $P(A \cap B) = 0$, but they are strongly dependent, since if one occurs the other cannot.
+\end{enumerate}
+
+%==================================================================
+\section*{Question 3: Bayes' Theorem and Team Strength}
+
+\[
+S = \{\text{team is strong}\}, \quad D = \{\text{team wins its first three games}\},
+\]
+\[
+P(S) = 0.30, \quad P(S^c) = 0.70, \quad P(D \mid S) = 0.80, \quad P(D \mid S^c) = 0.20.
+\]
+
+\begin{enumerate}
+\item By the law of total probability,
+\[
+\begin{aligned}
+P(D) &= P(D \mid S)\,P(S) + P(D \mid S^c)\,P(S^c) \\
+&= (0.80)(0.30) + (0.20)(0.70) = 0.24 + 0.14 = 0.38.
+\end{aligned}
+\]
+
+\item By Bayes' theorem,
+\[
+P(S \mid D) = \frac{P(D \mid S)\,P(S)}{P(D)} = \frac{0.24}{0.38} \approx 0.6316.
+\]
+
+\item
+\[
+P(S^c \mid D) = \frac{P(D \mid S^c)\,P(S^c)}{P(D)} = \frac{0.14}{0.38} \approx 0.3684.
+\]
+Check: $\dfrac{0.24}{0.38} + \dfrac{0.14}{0.38} = \dfrac{0.38}{0.38} = 1$. \checkmark
+
+\item $P(S \mid D)$ will \textbf{increase}. The posterior is proportional to prior $\times$ likelihood, and the likelihoods $P(D \mid S) = 0.80$ and $P(D \mid S^c) = 0.20$ do not change. Raising the prior on $S$ from $0.30$ to $0.60$ increases the numerator $P(D \mid S)P(S)$ relative to the competing term $P(D \mid S^c)P(S^c)$, so more of the posterior probability goes to $S$. (For reference, the new posterior is $0.48/0.56 \approx 0.857$.)
+
+\item The prior $P(S) = 0.30$ is the analyst's belief that the team is strong before any games are played, and the data (winning the first three games), through the likelihoods $P(D \mid S)$ and $P(D \mid S^c)$, update that belief to the posterior $P(S \mid D) \approx 0.63$.
+\end{enumerate}
+
+%==================================================================
+\section*{Question 4: Random Variables and the Binomial Distribution}
+
+\[
+p = 0.75, \qquad
+X_i = \begin{cases} 1, & \text{if the $i$th free throw is made,} \\ 0, & \text{otherwise,} \end{cases}
+\qquad
+Y = \sum_{i=1}^{10} X_i \sim \text{Bin}(10, 0.75).
+\]
+
+\begin{enumerate}
+\item Each $X_i \sim \text{Bernoulli}(0.75)$, so
+\[
+\begin{aligned}
+E[X_i] &= 1 \cdot p + 0 \cdot (1-p) = p = 0.75, \\
+\text{Var}(X_i) &= E[X_i^2] - (E[X_i])^2 = p - p^2 = p(1-p) = (0.75)(0.25) = 0.1875.
+\end{aligned}
+\]
+
+\item
+\[
+P(Y = 8) = \binom{10}{8}(0.75)^8(0.25)^2 = 45\,(0.75)^8(0.25)^2 \approx 0.2816.
+\]
+
+\item
+\[
+\begin{aligned}
+P(Y \geq 8) &= 1 - P(Y \leq 7) = P(Y=8) + P(Y=9) + P(Y=10) \\
+&= \sum_{k=8}^{10}\binom{10}{k}(0.75)^k(0.25)^{10-k} \approx 0.2816 + 0.1877 + 0.0563 = 0.5256.
+\end{aligned}
+\]
+\begin{lstlisting}
+# P(Y >= 8) where Y is Binomial(n = 10, p = 0.75)
+1 - pbinom(7, size = 10, prob = 0.75)
+#> [1] 0.5255928
+
+# Equivalent: sum the pmf directly
+sum(dbinom(8:10, size = 10, prob = 0.75))
+#> [1] 0.5255928
+\end{lstlisting}
+
+\item By linearity of expectation,
+\[
+E[Y] = E\!\left[\sum_{i=1}^{10} X_i\right] = \sum_{i=1}^{10} E[X_i] = 10(0.75) = 7.5.
+\]
+
+\item In general,
+\[
+\text{Var}(Y) = \text{Var}\!\left(\sum_{i=1}^{10} X_i\right) = \sum_{i=1}^{10}\text{Var}(X_i) + 2\sum_{i<j}\text{Cov}(X_i, X_j).
+\]
+Because the free throws are independent, $\text{Cov}(X_i, X_j) = 0$ for all $i \neq j$, so the covariance terms drop out:
+\[
+\text{Var}(Y) = \sum_{i=1}^{10}\text{Var}(X_i) = 10(0.1875) = 1.875.
+\]
+\end{enumerate}
+
+%==================================================================
+\section*{Question 5: Joint Distribution, Marginals, and Covariance}
+
+$X$ = number of three-point attempts, $Y$ = number of three-point makes, with joint pmf
+\[
+\begin{array}{lcc}
+\toprule
+ & Y = 0 & Y = 1 \\
+\midrule
+X = 1 & 0.30 & 0.20 \\
+X = 2 & 0.10 & 0.40 \\
+\bottomrule
+\end{array}
+\]
+
+\begin{enumerate}
+\item Two conditions:
+  \begin{enumerate}[label=\arabic*., itemsep=2pt]
+  \item Every entry is between 0 and 1. \checkmark
+  \item The entries sum to 1: $0.30 + 0.20 + 0.10 + 0.40 = 1.00$. \checkmark
+  \end{enumerate}
+So the table is a valid joint pmf.
+
+\item
+\[
+\begin{aligned}
+P(X = 1) &= P(X=1, Y=0) + P(X=1, Y=1) = 0.30 + 0.20 = 0.50, \\
+P(X = 2) &= P(X=2, Y=0) + P(X=2, Y=1) = 0.10 + 0.40 = 0.50.
+\end{aligned}
+\]
+
+\item The marginal of $Y$ is $P(Y=0) = 0.30 + 0.10 = 0.40$ and $P(Y=1) = 0.20 + 0.40 = 0.60$. Then
+\[
+\begin{aligned}
+E[X] &= \sum_x x\,P(X=x) = 1(0.50) + 2(0.50) = 1.50, \\
+E[Y] &= \sum_y y\,P(Y=y) = 0(0.40) + 1(0.60) = 0.60.
+\end{aligned}
+\]
+
+\item
+\[
+\begin{aligned}
+E[XY] &= \sum_x \sum_y xy\,p_{X,Y}(x,y) \\
+&= (1)(0)(0.30) + (1)(1)(0.20) + (2)(0)(0.10) + (2)(1)(0.40) \\
+&= 0 + 0.20 + 0 + 0.80 = 1.00.
+\end{aligned}
+\]
+
+\item
+\[
+\text{Cov}(X, Y) = E[XY] - E[X]\,E[Y] = 1.00 - (1.50)(0.60) = 1.00 - 0.90 = 0.10.
+\]
+$X$ and $Y$ are \textbf{not} independent. If they were independent, $E[XY] = E[X]E[Y]$ and the covariance would be 0; since $\text{Cov}(X,Y) = 0.10 \neq 0$, they must be dependent. We can also check directly: $P(X=1, Y=0) = 0.30$, but $P(X=1)\,P(Y=0) = (0.50)(0.40) = 0.20$. The positive covariance means $X$ and $Y$ tend to move together: more three-point attempts go with more three-point makes.
+\end{enumerate}
+
+\end{document}

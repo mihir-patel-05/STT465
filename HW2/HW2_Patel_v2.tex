@@ -1,0 +1,284 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{graphicx}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlist[enumerate]{label=(\alph*), leftmargin=*, itemsep=8pt}
+
+\lstset{
+  language=R,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{gray},
+  frame=single,
+  rulecolor=\color{gray!60},
+  backgroundcolor=\color{gray!6},
+  xleftmargin=4pt, xrightmargin=4pt,
+  aboveskip=6pt, belowskip=4pt,
+  showstringspaces=false,
+  columns=fullflexible,
+  keepspaces=true
+}
+
+% Problem statement box style
+\newcommand{\prob}[1]{\par\noindent{\color{gray!40!black}\itshape #1}\par\smallskip}
+\newcommand{\soln}{\textbf{Solution.}\ }
+
+\title{STT 465 -- Homework 2: Single-Parameter Bayesian Models}
+\author{Mihir Patel}
+\date{Due October 9, 2026}
+
+\begin{document}
+\maketitle
+
+%==================================================================
+\section*{Question 1: Bernoulli-Beta Posterior \hfill [1 point]}
+
+\prob{A basketball player makes 18 of 25 free throws. Let $X_i \mid \omega \sim \mathrm{Bern}(\omega)$, $i = 1,\dots,25$, where $\omega$ is the player's underlying probability of making a free throw. Assume the prior $\omega \sim \mathrm{Beta}(2,2)$.}
+
+Throughout, let $n = 25$, $s = \sum_{i=1}^{25} x_i = 18$ (makes), and $n - s = 7$ (misses). The prior hyperparameters are $a = b = 2$.
+
+\begin{enumerate}
+\item \prob{Write the likelihood function $L(\omega \mid x)$ up to a multiplicative constant that does not depend on $\omega$. [0.2 pt]}
+\soln Since the $X_i$ are conditionally independent given $\omega$,
+\[
+L(\omega \mid x) = \prod_{i=1}^{25} \omega^{x_i}(1-\omega)^{1-x_i}
+= \omega^{\sum x_i}(1-\omega)^{\,n-\sum x_i}
+= \omega^{18}(1-\omega)^{7}, \qquad 0 \le \omega \le 1.
+\]
+
+\item \prob{Use Bayes' theorem to derive the posterior distribution $\pi(\omega \mid x)$. Identify the posterior distribution and its parameters. [0.2 pt]}
+\soln The $\mathrm{Beta}(2,2)$ prior density is
+\[
+\pi(\omega) = \frac{1}{B(2,2)}\,\omega^{2-1}(1-\omega)^{2-1} \propto \omega(1-\omega).
+\]
+By Bayes' theorem,
+\[
+\pi(\omega \mid x) = \frac{L(\omega \mid x)\,\pi(\omega)}{\int_0^1 L(\omega \mid x)\,\pi(\omega)\,d\omega}
+\;\propto\; \omega^{18}(1-\omega)^{7}\cdot \omega(1-\omega)
+= \omega^{19}(1-\omega)^{8}
+= \omega^{20-1}(1-\omega)^{9-1}.
+\]
+This is the kernel of a Beta density, so after normalizing,
+\[
+\boxed{\;\omega \mid x \sim \mathrm{Beta}(20,\,9)\;}, \qquad
+\pi(\omega \mid x) = \frac{1}{B(20,9)}\,\omega^{19}(1-\omega)^{8},\quad 0<\omega<1.
+\]
+In general, a $\mathrm{Beta}(a,b)$ prior with $s$ successes in $n$ trials gives a $\mathrm{Beta}(a+s,\; b+n-s)$ posterior; here $(2+18,\ 2+7) = (20, 9)$.
+
+\item \prob{Derive the posterior mean $E[\omega \mid x]$ and calculate its numerical value. [0.2 pt]}
+\soln For $\omega \sim \mathrm{Beta}(\alpha,\beta)$,
+\[
+E[\omega] = \int_0^1 \omega \cdot \frac{\omega^{\alpha-1}(1-\omega)^{\beta-1}}{B(\alpha,\beta)}\,d\omega
+= \frac{B(\alpha+1,\beta)}{B(\alpha,\beta)}
+= \frac{\Gamma(\alpha+1)\,\Gamma(\alpha+\beta)}{\Gamma(\alpha)\,\Gamma(\alpha+\beta+1)}
+= \frac{\alpha}{\alpha+\beta},
+\]
+using $\Gamma(z+1) = z\,\Gamma(z)$. With $\alpha = 20$, $\beta = 9$,
+\[
+E[\omega \mid x] = \frac{a+s}{a+b+n} = \frac{20}{29} \approx 0.6897.
+\]
+This lies between the prior mean $2/4 = 0.5$ and the sample proportion $18/25 = 0.72$, closer to the data because $n = 25$ outweighs the prior's effective sample size $a+b = 4$.
+
+\item \prob{Calculate the posterior mode and posterior median. You may use \texttt{qbeta()} for the median. [0.2 pt]}
+\soln For $\alpha, \beta > 1$, the Beta mode is found by setting the derivative of the log-density to zero:
+\[
+\frac{d}{d\omega}\Big[(\alpha-1)\log\omega + (\beta-1)\log(1-\omega)\Big] = \frac{\alpha-1}{\omega} - \frac{\beta-1}{1-\omega} = 0
+\;\Longrightarrow\;
+\omega_{\text{mode}} = \frac{\alpha-1}{\alpha+\beta-2}.
+\]
+So
+\[
+\text{Mode} = \frac{19}{27} \approx 0.7037.
+\]
+The median has no closed form, so we use the Beta quantile function:
+\begin{lstlisting}
+qbeta(0.5, shape1 = 20, shape2 = 9)
+#> [1] 0.6940678
+\end{lstlisting}
+\[
+\text{Median} \approx 0.6941.
+\]
+Mean $(0.6897) <$ median $(0.6941) <$ mode $(0.7037)$, consistent with a slightly left-skewed posterior ($\alpha > \beta$).
+
+\item \prob{Use R to calculate $P(\omega > 0.70 \mid x)$. Include the R command you use. [0.2 pt]}
+\soln
+\[
+P(\omega > 0.70 \mid x) = 1 - F_{\omega \mid x}(0.70) = \int_{0.70}^{1} \frac{\omega^{19}(1-\omega)^{8}}{B(20,9)}\,d\omega.
+\]
+\begin{lstlisting}
+1 - pbeta(0.70, shape1 = 20, shape2 = 9)
+#> [1] 0.4724805
+
+# Equivalent:
+pbeta(0.70, shape1 = 20, shape2 = 9, lower.tail = FALSE)
+\end{lstlisting}
+\[
+P(\omega > 0.70 \mid x) \approx 0.4725.
+\]
+Given the data and prior, there is about a 47\% posterior probability that the player's true free-throw percentage exceeds 70\%.
+\end{enumerate}
+
+%==================================================================
+\section*{Question 2: Prior Sensitivity and Bayesian Updating \hfill [1 point]}
+
+\prob{Suppose a treatment is effective for 18 of 21 patients. Let $\omega$ denote the probability that the treatment is effective. Consider the two priors
+\[
+\text{Prior A: } \omega \sim \mathrm{Beta}(1,1), \qquad \text{Prior B: } \omega \sim \mathrm{Beta}(4,\,0.9).
+\]}
+
+\begin{enumerate}
+\item \prob{Derive the posterior distribution under Prior A. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Derive the posterior distribution under Prior B. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{For a general prior $\omega \sim \mathrm{Beta}(a,b)$, show that the posterior mean can be written as
+\[
+E[\omega \mid x] = \frac{a+b}{a+b+n}\cdot\frac{a}{a+b} + \frac{n}{a+b+n}\cdot\frac{x}{n}.
+\]
+Explain what the two terms represent. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Compute the posterior mean under Priors A and B. Briefly explain why the two answers differ. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Use R to plot the two posterior densities on the same graph. Add a vertical line at the sample proportion $\tilde{\omega} = 18/21$. Briefly describe what the plot shows. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+\end{enumerate}
+
+%==================================================================
+\section*{Question 3: Credible Intervals and HPDI \hfill [1 point]}
+
+\prob{Suppose that after observing data, the posterior distribution is $\omega \mid x \sim \mathrm{Beta}(22, 4)$.}
+
+\begin{enumerate}
+\item \prob{Write the R commands needed to calculate the 95\% equal-tailed credible interval $\big[F^{-1}_{\omega\mid x}(0.025),\ F^{-1}_{\omega\mid x}(0.975)\big]$. Report the numerical interval. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Explain in one or two sentences the Bayesian interpretation of this 95\% credible interval. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Generate 10{,}000 posterior samples using the code below. Use the \texttt{HDInterval} package to estimate the 95\% HPDI. [0.2 pt]}
+\begin{lstlisting}
+set.seed(1)
+omega_post <- rbeta(10000, shape1 = 22, shape2 = 4)
+\end{lstlisting}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Compare the equal-tailed credible interval and the HPDI. Which one is shorter? [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Explain why the two intervals need not be identical for a skewed posterior distribution. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+\end{enumerate}
+
+%==================================================================
+\section*{Question 4: Comparing Two Population Proportions \hfill [1 point]}
+
+\prob{A study of births reports that among 980 births in one group, 437 were female. In a second group, among 820 births, 398 were female. Let $\omega_x$ = female birth proportion in group 1 and $\omega_y$ = female birth proportion in group 2. Assume independent priors $\omega_x \sim \mathrm{Beta}(1,1)$, $\omega_y \sim \mathrm{Beta}(1,1)$.}
+
+\begin{enumerate}
+\item \prob{Derive the posterior distributions of $\omega_x$ and $\omega_y$. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Calculate the posterior means $E[\omega_x \mid x]$ and $E[\omega_y \mid y]$. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Use the following posterior simulation idea to estimate $P(\omega_x < \omega_y \mid x, y)$. Complete the missing parts of the R code. [0.2 pt]}
+\begin{lstlisting}
+set.seed(1)
+U <- 10000
+omega_x <- rbeta(U, shape1 = ______, shape2 = ______)
+omega_y <- rbeta(U, shape1 = ______, shape2 = ______)
+mean(omega_x < omega_y)
+\end{lstlisting}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Explain in words what the probability $P(\omega_x < \omega_y \mid x, y)$ means. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{A frequentist analysis uses the code below. Briefly explain the difference between the posterior probability in part (c) and the frequentist p-value. [0.2 pt]}
+\begin{lstlisting}
+prop.test(c(437, 398), c(980, 820), alternative = "less")
+\end{lstlisting}
+\soln
+
+\vspace{1.5cm}
+\end{enumerate}
+
+%==================================================================
+\section*{Question 5: Poisson-Gamma Model and Prediction \hfill [1 point]}
+
+\prob{Suppose the number of customer complaints received by a company on day $i$ satisfies $X_i \mid \lambda \sim \mathrm{Poi}(\lambda)$, $i = 1,\dots,n$. Over 20 days, a total of 54 complaints are observed: $n = 20$, $\sum_{i=1}^{20} x_i = 54$. Assume the Gamma prior $\lambda \sim \mathrm{Ga}(a = 2,\ b = 1)$, where $a$ is the shape and $b$ is the rate.}
+
+\begin{enumerate}
+\item \prob{Show that the likelihood function has the form $L(\lambda \mid x) \propto \lambda^{\sum_i x_i}\exp(-n\lambda)$. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Derive the posterior distribution of $\lambda$ and identify its parameters. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Calculate the posterior mean $E[\lambda \mid x]$ and a 95\% equal-tailed credible interval using \texttt{qgamma()}. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Derive the posterior predictive mean for the number of complaints on a future day, $E[X_f \mid x]$. Explain why it is equal to $E[\lambda \mid x]$. [0.2 pt]}
+\soln
+
+\vspace{1.5cm}
+
+\item \prob{Use posterior simulation to estimate $P(X_f \ge 4 \mid x)$, using the structure below. Report your estimate and explain what it means. [0.2 pt]}
+\begin{lstlisting}
+set.seed(1)
+U <- 10000
+lambda_post <- rgamma(U, shape = ______, rate = ______)
+x_future <- rpois(U, lambda = lambda_post)
+mean(x_future >= 4)
+\end{lstlisting}
+\soln
+
+\vspace{1.5cm}
+\end{enumerate}
+
+\end{document}
