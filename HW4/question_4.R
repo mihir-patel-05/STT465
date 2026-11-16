@@ -12,16 +12,29 @@ mcse <- sd(theta) / sqrt(U)
 sd(theta); mcse
 mean(theta) + c(-1, 1) * 1.96 * mcse
 
-# (d) U = 10000
 set.seed(465)
-U2 <- 10000
-theta2 <- rbeta(U2, 5, 3)
-mean(theta2)
-mean(theta2 > 0.6)
-mcse2 <- sd(theta2) / sqrt(U2)
-sd(theta2); mcse2
-mean(theta2) + c(-1, 1) * 1.96 * mcse2
-mcse / mcse2           # ratio of standard errors (~ sqrt(10))
+
+U_2 <- 10000
+
+theta_2 <- rbeta(U_2, 5, 3)
+
+mean(theta_2)
+
+mean(theta_2 > 0.6)
+
+Monte_carlo_error_2 <- sd(theta_2) / sqrt(U_2)
+
+sd(theta_2)
+
+Monte_carlo_error_2
+
+mean(theta_2) + c(-1, 1) * 1.96 * Monte_carlo_error_2
+
+Monte_carlo_error / Monte_carlo_error_2          
+
+# exact values for comparison
+5 / 8
+1 - pbeta(0.6, 5, 3)
 
 # exact values for comparison
 5 / 8
