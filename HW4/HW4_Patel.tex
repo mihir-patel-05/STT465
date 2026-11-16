@@ -1,0 +1,313 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{graphicx}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlist[enumerate]{label=(\alph*), leftmargin=*, itemsep=8pt}
+
+\lstset{
+  language=R,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{gray},
+  frame=single,
+  rulecolor=\color{gray!60},
+  backgroundcolor=\color{gray!6},
+  xleftmargin=4pt, xrightmargin=4pt,
+  aboveskip=6pt, belowskip=4pt,
+  showstringspaces=false,
+  columns=fullflexible,
+  keepspaces=true
+}
+\lstdefinestyle{out}{language={}, backgroundcolor=\color{white}, frame=leftline, keywordstyle={}, commentstyle={}}
+
+\title{STT 465 -- Homework 4: Normal Models, Multinomial Models, and Monte Carlo Methods}
+\author{Mihir Patel}
+\date{November 16, 2026}
+
+\begin{document}
+\maketitle
+
+%==================================================================
+\section*{Question 1: Normal Model with Known Mean}
+
+$X_1,\dots,X_n \mid \sigma^2 \overset{iid}{\sim} N(\mu,\sigma^2)$ with $\mu = 5$ known, $\lambda = 1/\sigma^2$, $SS_\mu = \sum_{i=1}^n (x_i-\mu)^2$, and $\lambda \sim \text{Gamma}(a_0, b_0)$ (rate).
+
+\begin{enumerate}
+\item Writing each normal density in terms of $\lambda$,
+\[
+f(x \mid \lambda) = \prod_{i=1}^n \left(\frac{\lambda}{2\pi}\right)^{1/2} \exp\!\left[-\frac{\lambda}{2}(x_i-\mu)^2\right]
+= (2\pi)^{-n/2}\,\lambda^{n/2} \exp\!\left[-\frac{\lambda}{2}\sum_{i=1}^n (x_i-\mu)^2\right].
+\]
+Dropping the constant $(2\pi)^{-n/2}$, which does not involve $\lambda$,
+\[
+f(x \mid \lambda) \propto \lambda^{n/2} \exp\!\left(-\frac{\lambda\, SS_\mu}{2}\right).
+\]
+
+\item The prior kernel is $\pi(\lambda) \propto \lambda^{a_0-1} e^{-b_0 \lambda}$. By Bayes' rule,
+\[
+\pi(\lambda \mid x) \propto f(x\mid\lambda)\,\pi(\lambda)
+\propto \lambda^{n/2} e^{-\lambda SS_\mu/2}\cdot \lambda^{a_0-1} e^{-b_0\lambda}
+= \lambda^{(a_0 + n/2) - 1} \exp\!\left[-\left(b_0 + \frac{SS_\mu}{2}\right)\lambda\right].
+\]
+This is the kernel of a Gamma distribution, so $\lambda \mid x \sim \text{Gamma}(a_n, b_n)$ with
+\[
+a_n = a_0 + \frac{n}{2}, \qquad b_n = b_0 + \frac{SS_\mu}{2}.
+\]
+
+\item With $a_0 = 2$, $b_0 = 3$, $n = 8$, $SS_\mu = 18$:
+\[
+a_n = 2 + \tfrac{8}{2} = 6, \qquad b_n = 3 + \tfrac{18}{2} = 12,
+\qquad \lambda \mid x \sim \text{Gamma}(6, 12),
+\qquad E(\lambda \mid x) = \frac{a_n}{b_n} = \frac{6}{12} = 0.5.
+\]
+
+\item Under Jeffreys' prior $\pi(\lambda) \propto \lambda^{-1}$ (the limit $a_0, b_0 \to 0$),
+\[
+\pi(\lambda\mid x) \propto \lambda^{n/2-1} e^{-\lambda SS_\mu/2}
+\;\Longrightarrow\;
+\lambda \mid x \sim \text{Gamma}\!\left(\tfrac{n}{2}, \tfrac{SS_\mu}{2}\right) = \text{Gamma}(4, 9),
+\qquad E(\lambda\mid x) = \tfrac{4}{9} \approx 0.444.
+\]
+The Jeffreys posterior mean equals the MLE $\hat\lambda = n/SS_\mu = 8/18 = 0.444$, so it is driven entirely by the data. The Gamma$(2,3)$ prior has mean $2/3 \approx 0.667$ and acts like $2a_0 = 4$ extra observations, so it pulls the posterior mean up from $0.444$ to $0.5$, between the prior mean and the MLE.
+
+\item The posterior predictive for a future $\tilde X$ averages the normal over the posterior for $\sigma^2$:
+\[
+p(\tilde x \mid x) = \int_0^\infty N(\tilde x \mid \mu, 1/\lambda)\,\text{Gamma}(\lambda \mid a_n, b_n)\,d\lambda .
+\]
+This is a scale mixture of normals, which gives a Student-$t$ distribution with $2a_n$ degrees of freedom, location $\mu$, and scale$^2$ $b_n/a_n$. It has heavier tails than any single normal. By the law of total variance, $\text{Var}(\tilde X \mid x) = E(\sigma^2 \mid x) = b_n/(a_n-1)$. Plugging in one fixed $\sigma^2$ ignores that we are unsure about the variance. Averaging over plausible values of $\sigma^2$, including the large ones, adds that uncertainty and spreads the predictive out. Here the predictive is $t_{12}(5,\, 2)$ with variance $12/5 = 2.4$.
+\end{enumerate}
+
+%==================================================================
+\section*{Question 2: Unknown Mean and Variance}
+
+$X_i \mid \mu,\sigma^2 \overset{iid}{\sim} N(\mu,\sigma^2)$, $\mu \mid \sigma^2 \sim N(\mu_0, \sigma^2/p_0)$, $\sigma^2 \sim IG(\nu_0/2,\, SS_0/2)$, $SS = \sum(x_i-\bar x)^2$.
+
+\begin{enumerate}
+\item The normal--inverse-gamma posterior is
+$\mu \mid \sigma^2, x \sim N(\mu_n, \sigma^2/p_n)$ and $\sigma^2 \mid x \sim IG(\nu_n/2,\, SS_n/2)$, where
+\[
+p_n = p_0 + n, \qquad
+\mu_n = \frac{p_0\mu_0 + n\bar x}{p_0 + n}, \qquad
+\nu_n = \nu_0 + n, \qquad
+SS_n = SS_0 + SS + \frac{p_0 n}{p_0 + n}(\bar x - \mu_0)^2 .
+\]
+
+\item With $p_0 = 2$, $\mu_0 = 4$, $\nu_0 = 4$, $SS_0 = 12$, $n = 6$, $\bar x = 5$, $SS = 15$:
+\begin{align*}
+p_n &= 2 + 6 = 8,\\
+\mu_n &= \frac{2(4) + 6(5)}{8} = \frac{38}{8} = 4.75,\\
+\nu_n &= 4 + 6 = 10,\\
+SS_n &= 12 + 15 + \frac{2\cdot 6}{8}(5-4)^2 = 27 + 1.5 = 28.5 .
+\end{align*}
+
+\item
+\[
+\mu \mid \sigma^2, x \sim N\!\left(4.75,\; \frac{\sigma^2}{8}\right), \qquad
+\sigma^2 \mid x \sim IG\!\left(\frac{10}{2}, \frac{28.5}{2}\right) = IG(5,\; 14.25).
+\]
+For reference, $E(\sigma^2\mid x) = 14.25/(5-1) = 3.5625$. Integrating out $\sigma^2$ gives $\mu \mid x \sim t_{10}\big(4.75,\; SS_n/(\nu_n p_n) = 0.35625\big)$.
+
+\item
+\[
+\mu_n = \frac{p_0}{p_0+n}\,\mu_0 + \frac{n}{p_0+n}\,\bar x = \frac{2}{8}(4) + \frac{6}{8}(5) = 1 + 3.75 = 4.75.
+\]
+The weight on $\bar x$ is $n/(p_0+n)$, which increases to 1 as $n\to\infty$ while the prior weight $p_0/(p_0+n) \to 0$. With more data, the posterior mean is driven almost entirely by the sample mean. The prior acts like $p_0$ ``pseudo-observations'' centered at $\mu_0$.
+
+\item $SS_0$ is the prior's sum of squares and $SS$ measures spread within the data. The extra term $\frac{p_0 n}{p_0+n}(\bar x-\mu_0)^2$ measures how far the sample mean is from the prior mean, which is the disagreement between prior and data. If they conflict, this term inflates $SS_n$, so the posterior for $\sigma^2$ shifts toward larger values and more uncertainty. The coefficient $\frac{p_0 n}{p_0+n}$ is like a harmonic combination of the two sample sizes. The term is large only if both the prior ($p_0$) and the data ($n$) are informative. Here it adds $1.5$ to $SS_n$.
+\end{enumerate}
+
+%==================================================================
+\section*{Question 3: Multinomial--Dirichlet Model}
+
+$x = (20, 12, 8)$, $n = 40$, $x \mid \omega \sim \text{Mult}(40, \omega)$, $\omega \sim \text{Dir}(2,2,2)$.
+
+\begin{enumerate}
+\item Likelihood and prior kernels:
+\[
+f(x\mid\omega) \propto \omega_1^{20}\,\omega_2^{12}\,\omega_3^{8}, \qquad
+\pi(\omega) \propto \omega_1^{2-1}\omega_2^{2-1}\omega_3^{2-1} = \omega_1\omega_2\omega_3 .
+\]
+By Bayes' rule,
+\[
+\pi(\omega\mid x) \propto \omega_1^{21}\,\omega_2^{13}\,\omega_3^{9}
+= \omega_1^{22-1}\omega_2^{14-1}\omega_3^{10-1},
+\]
+on the simplex $\omega_1+\omega_2+\omega_3 = 1$. Therefore
+$\omega \mid x \sim \text{Dir}(2+20,\, 2+12,\, 2+8) = \text{Dir}(22, 14, 10)$.
+
+\item For $\text{Dir}(\alpha_1,\alpha_2,\alpha_3)$, $E(\omega_k) = \alpha_k / \sum_j \alpha_j$ with $\sum_j\alpha_j = 46$:
+\[
+E(\omega_1\mid x) = \tfrac{22}{46} \approx 0.4783 \;(\text{car}), \quad
+E(\omega_2\mid x) = \tfrac{14}{46} \approx 0.3043 \;(\text{bus}), \quad
+E(\omega_3\mid x) = \tfrac{10}{46} \approx 0.2174 \;(\text{bicycle}).
+\]
+
+\item For a future respondent $\tilde Y$,
+\[
+P(\tilde Y = \text{bicycle}\mid x) = \int \omega_3\,\pi(\omega\mid x)\,d\omega = E(\omega_3 \mid x) = \frac{10}{46} \approx 0.2174 .
+\]
+
+\item Under $\text{Dir}(1,1,1)$ the posterior is $\text{Dir}(21, 13, 9)$ with total 43, so
+\[
+E(\omega_1 \mid x) = \tfrac{21}{43} \approx 0.4884 .
+\]
+This is slightly larger than $0.4783$ from part (b) and closer to the sample proportion $20/40 = 0.5$. The $\text{Dir}(2,2,2)$ prior is worth 6 pseudo-counts spread evenly, so it shrinks every proportion toward $1/3$ more strongly than the uniform prior, which is worth only 3 pseudo-counts.
+
+\item If $Y_k \overset{ind}{\sim} \text{Gamma}(\alpha_k, 1)$ and $S = \sum_k Y_k$, then $(Y_1/S, Y_2/S, Y_3/S) \sim \text{Dir}(\alpha_1,\alpha_2,\alpha_3)$. We use $\alpha = (22,14,10)$.
+\lstinputlisting{question_3e.R}
+Output:
+\begin{lstlisting}[style=out]
+[1] 0.4790278 0.3045330 0.2164392
+[1] 0.9131
+       2.5%       97.5%
+-0.07420041  0.41572194
+\end{lstlisting}
+The simulated means match part (b). The estimate is $P(\omega_1 > \omega_2 \mid x) \approx 0.913$. As a check, $\omega_1/(\omega_1+\omega_2) \sim \text{Beta}(22,14)$ gives the exact value $0.912$. A 95\% equal-tailed credible interval for $\omega_1 - \omega_2$ is $(-0.074,\; 0.416)$. Car is very likely more popular than bus, but the interval still includes 0.
+\end{enumerate}
+
+%==================================================================
+\section*{Question 4: Direct Monte Carlo Approximation}
+
+$\theta \mid x \sim \text{Beta}(5,3)$.
+
+\begin{enumerate}
+\item The exact posterior mean is $E(\theta\mid x) = \frac{5}{5+3} = 0.625$.
+To get $U$ independent posterior draws in R, call \texttt{theta <- rbeta(U, 5, 3)}. Then $E(\theta\mid x) \approx \frac{1}{U}\sum_u \theta^{(u)}$ is \texttt{mean(theta)}, and $P(\theta > 0.6\mid x) \approx \frac{1}{U}\sum_u \mathbf{1}\{\theta^{(u)} > 0.6\}$ is \texttt{mean(theta > 0.6)}.
+
+\item[(b)--(d)] Code (full script \texttt{question\_4.R}):
+\begin{lstlisting}
+# (b) U = 1000
+set.seed(465)
+U <- 1000
+theta <- rbeta(U, 5, 3)
+mean(theta)
+mean(theta > 0.6)
+
+# (c) MC standard error and 95% MC confidence interval
+mcse <- sd(theta) / sqrt(U)
+sd(theta); mcse
+mean(theta) + c(-1, 1) * 1.96 * mcse
+
+# (d) U = 10000
+set.seed(465)
+U2 <- 10000
+theta2 <- rbeta(U2, 5, 3)
+mean(theta2); mean(theta2 > 0.6)
+mcse2 <- sd(theta2) / sqrt(U2)
+sd(theta2); mcse2
+mean(theta2) + c(-1, 1) * 1.96 * mcse2
+mcse / mcse2
+\end{lstlisting}
+Output:
+\begin{lstlisting}[style=out]
+[1] 0.6231907        # mean(theta),  U = 1000
+[1] 0.585            # mean(theta > 0.6)
+[1] 0.164834         # sd(theta)
+[1] 0.005212509      # mcse
+[1] 0.6129741 0.6334072
+[1] 0.6271692        # mean(theta2), U = 10000
+[1] 0.5909           # mean(theta2 > 0.6)
+[1] 0.1621351        # sd(theta2)
+[1] 0.001621351      # mcse2
+[1] 0.6239913 0.6303470
+[1] 3.214917         # mcse / mcse2
+\end{lstlisting}
+
+\item[(b)] With $U = 1000$: $\widehat{E}(\theta\mid x) = 0.6232$ (exact $0.625$) and $\widehat{P}(\theta > 0.6\mid x) = 0.585$ (exact $1 - F_{\text{Beta}(5,3)}(0.6) = 0.5801$).
+
+\item[(c)] The Monte Carlo standard error is
+$\widehat{\text{SE}} = s_\theta/\sqrt{U} = 0.16483/\sqrt{1000} \approx 0.00521$.
+An approximate 95\% Monte Carlo confidence interval for the posterior mean is
+\[
+0.6232 \pm 1.96(0.00521) = (0.6130,\; 0.6334),
+\]
+which contains the true value $0.625$.
+
+\item[(d)] With $U = 10000$: $\widehat{E}(\theta\mid x) = 0.6272$, $\widehat{P}(\theta>0.6\mid x) = 0.5909$, $\widehat{\text{SE}} = 0.16214/\sqrt{10000} \approx 0.00162$, and the 95\% MC interval is $(0.6240,\; 0.6303)$.
+The MC standard error dropped from $0.00521$ to $0.00162$, a factor of $\approx 3.21$. Because $\text{SE} = \sigma/\sqrt{U}$, multiplying $U$ by 10 should shrink the error by $\sqrt{10} \approx 3.16$. That matches what we see.
+
+\item[(e)] A 95\% posterior credible interval for $\theta$ (here the $2.5\%$ and $97.5\%$ quantiles of Beta$(5,3)$, $\approx (0.290, 0.901)$) describes our uncertainty about the parameter $\theta$ given the data. Its width depends on the data and prior, and it does not shrink as $U$ grows. More draws only estimate its endpoints more precisely. A 95\% Monte Carlo confidence interval for $E(\theta\mid x)$ describes simulation error only. $E(\theta \mid x) = 0.625$ is a fixed number, and the interval tells us how precisely our finite sample of draws estimates it. Its width shrinks like $1/\sqrt{U}$ and goes to 0 as $U\to\infty$.
+\end{enumerate}
+
+%==================================================================
+\section*{Question 5: Acceptance--Rejection and Importance Sampling}
+
+$f(x) = 2x$, $0 < x < 1$.
+
+\begin{enumerate}
+\item $f(x) = 2x \ge 0$ on $(0,1)$ and $\int_0^1 2x\,dx = \big[x^2\big]_0^1 = 1$, so $f$ is a valid density.
+\[
+E_f(X) = \int_0^1 x\cdot 2x\,dx = \left[\tfrac{2x^3}{3}\right]_0^1 = \tfrac{2}{3} \approx 0.6667 .
+\]
+
+\item With $g(x) = 1$ on $(0,1)$ we need $2x \le M$ for all $x\in(0,1)$. Since $\sup_{0<x<1} f(x)/g(x) = 2$, the constant $M = 2$ is valid and is the smallest valid envelope constant.
+
+\item One iteration:
+  \begin{enumerate}[label=\arabic*.]
+  \item Draw $X^* \sim \text{Unif}(0,1)$ and, independently, $U \sim \text{Unif}(0,1)$.
+  \item Compute the acceptance ratio $\dfrac{f(X^*)}{M g(X^*)} = \dfrac{2X^*}{2\cdot 1} = X^*$.
+  \item If $U \le X^*$, accept and keep $X^*$ as a draw from $f$. Otherwise reject it and repeat.
+  \end{enumerate}
+The theoretical acceptance probability is
+\[
+P(\text{accept}) = \int_0^1 \frac{f(x)}{M g(x)}\,g(x)\,dx = \frac{1}{M} = \frac{1}{2},
+\]
+so on average 2 proposals are needed per accepted draw.
+
+\item Code (in \texttt{question\_5.R}):
+\begin{lstlisting}
+set.seed(465)
+n_target <- 5000
+draws <- numeric(n_target)
+n_acc <- 0; n_try <- 0
+while (n_acc < n_target) {
+  x_star <- runif(1)
+  u <- runif(1)
+  n_try <- n_try + 1
+  if (u <= x_star) {          # accept if u <= f(x*) / (M g(x*)) = x*
+    n_acc <- n_acc + 1
+    draws[n_acc] <- x_star
+  }
+}
+mean(draws)
+n_acc / n_try
+\end{lstlisting}
+Output:
+\begin{lstlisting}[style=out]
+[1] 0.6647156
+[1] 0.4968697
+\end{lstlisting}
+The sample mean of the 5000 accepted draws is $0.6647$, very close to the exact $E_f(X) = 2/3 \approx 0.6667$. The difference of $0.002$ is within about one Monte Carlo SE ($\approx 0.0034$). It took 10{,}063 proposals, an acceptance rate of $0.497 \approx 1/2$ as predicted.
+
+\item With $Z_1,\dots,Z_{5000} \overset{iid}{\sim} g = \text{Unif}(0,1)$, the importance weight is
+\[
+w(z) = \frac{f(z)}{g(z)} = \frac{2z}{1} = 2z,
+\]
+and the importance sampling estimator is
+\[
+\widehat{E_f(X)} = \frac{1}{5000}\sum_{i=1}^{5000} Z_i\, w(Z_i) = \frac{1}{5000}\sum_{i=1}^{5000} 2Z_i^2 .
+\]
+It is unbiased because $E_g[Z\,w(Z)] = \int z \frac{f(z)}{g(z)} g(z)\,dz = \int z f(z)\,dz = E_f(X)$.
+\begin{lstlisting}
+set.seed(465)
+z <- runif(5000)
+w <- 2 * z                    # w(z) = f(z) / g(z)
+mean(w * z)                   # IS estimate of E_f(X)
+sd(w * z) / sqrt(5000)        # Monte Carlo SE
+\end{lstlisting}
+\begin{lstlisting}[style=out]
+[1] 0.6632251
+[1] 0.008493895
+\end{lstlisting}
+The IS estimate is $0.6632$, close to $2/3$.
+This estimator needs no acceptance step because it never tries to produce draws distributed exactly as $f$. Every draw from $g$ is kept, and the mismatch between $g$ and $f$ is corrected by weighting each draw by $w(z) = f(z)/g(z)$. Draws where $f$ is large count more and draws where $f$ is small count less. Acceptance--rejection instead fixes the mismatch by throwing away proposals, which here discards about half of them.
+\end{enumerate}
+
+\end{document}
